@@ -1,0 +1,323 @@
+/***********************
+ * GGM Serialize + Pos + MH Plan
+ * ES5 호환 버전 (V8 런타임 비활성화 환경용)
+ ***********************/
+var SHEET_ID   = '13CUG73ekp5xoCo3U8P-Sbn9ynJ9cvs6V06_dEQeG4VQ'; // 타임라인 시트 ID
+var SH_MAIN    = 'Sheet1';            // 타임라인 시트 이름
+var TIMELINE_SHEETS = [SH_MAIN];
+// MH plan 대상 문서/시트
+var MH_PLAN_SHEET_ID = '1NydaQ9oBS1QG-wyyl7eO6AX5ou8ULRvxx0G3hfWdCFE';
+var MH_SHEET_NAME = 'MysteryHands';
+var MH_ORANGE_ROW = 15; // B15:J15
+var MH_ORANGE_COL = 2;  // B=2
+var POS = {
+  Blank:     'C:\\GGM$\\GTOW\\GTOW_Blank\\blank.png',
+  Default_X: 'C:\\GGM$\\GTOW\\GTOW_Default\\LOOP_SHADOW_ARROW_X_00000.png',
+  Choice_O:  'C:\\GGM$\\GTOW\\GTOW_Choice\\LOOP_SHADOW_ARROW_O_00000.png',
+  Start_T:   'C:\\GGM$\\GTOW\\GTOW_Start_T\\IN_TOP_00000.png',
+  Start_L:   'C:\\GGM$\\GTOW\\GTOW_Start_L\\IN_LEFT_00000.png',
+  Start_R:   'C:\\GGM$\\GTOW\\GTOW_Start_R\\IN_RIGHT_00000.png',
+  Start_B:   'C:\\GGM$\\GTOW\\GTOW_Start_B\\IN_BOTTOM_00000.png'
+};
+// 시트에서 쓰는 좌석 순서(17포지션)
+var SEAT_ORDER = [
+  [1,1],[2,1],[2,2],[3,1],[3,2],[4,1],[4,2],[5,1],[5,2],
+  [6,1],[6,2],[7,1],[7,2],[8,1],[9,1],[9,2],[10,1]
+];
+// 인트로 방향 매핑
+var INTRO = {
+  '1-1':'Start_B',
+  '2-1':'Start_B','2-2':'Start_T',
+  '3-1':'Start_R','3-2':'Start_L',
+  '4-1':'Start_R','4-2':'Start_L',
+  '5-1':'Start_R','5-2':'Start_L',
+  '6-1':'Start_B','6-2':'Start_L',
+  '7-1':'Start_B','7-2':'Start_T',
+  '8-1':'Start_B',
+  '9-1':'Start_R','9-2':'Start_L',
+  '10-1':'Start_R'
+};
+// SeatIndex(0~9) → SeatNo(1~10) 매핑
+var SHEET_INDEX_TO_SEAT_NO = [5,6,7,8,9,1,2,3,4,10];
+
+function jsonOut(o) {
+  return ContentService.createTextOutput(JSON.stringify(o))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/***********************
+ * SeatIndex → SeatNo
+ ***********************/
+function mapSeatIndexToSeatNo(idx) {
+  idx = Number(idx);
+  if (!isFinite(idx) || idx < 0 || idx > 9) return 0;
+  return SHEET_INDEX_TO_SEAT_NO[idx] || 0;
+}
+
+/***********************
+ * 한 블록에서 Hero / Villain 좌석 번호 결정
+ ***********************/
+function decideHeroVillainSeatNos(seatIndexList) {
+  var uniq = [];
+  for (var i = 0; i < seatIndexList.length; i++) {
+    var v = seatIndexList[i];
+    if (uniq.indexOf(v) === -1) uniq.push(v);
+  }
+  var heroIdx = uniq[0];
+  var villIdx = uniq[1];
+  var heroNo = mapSeatIndexToSeatNo(heroIdx);
+  var villNo = mapSeatIndexToSeatNo(villIdx);
+  return { heroNo: heroNo || 0, villNo: villNo || 0 };
+}
+
+/***********************
+ * SeatNo -> 기본 포지션(Y)
+ ***********************/
+function defaultPosForSeat(seatNo) {
+  for (var i = 0; i < SEAT_ORDER.length; i++) {
+    var pair = SEAT_ORDER[i];
+    if (pair[0] === seatNo) return pair[1];
+  }
+  return 1;
+}
+
+/***********************
+ * Hero / Villain 의 (SeatNo, Pos) 결정
+ ***********************/
+function decideHeroVillainSlots(heroNo, villNo) {
+  var heroPos = heroNo ? defaultPosForSeat(heroNo) : 0;
+  var villPos = villNo ? defaultPosForSeat(villNo) : 0;
+  return {
+    heroNo: heroNo,
+    heroPos: heroPos,
+    villNo: villNo,
+    villPos: villPos
+  };
+}
+
+/***********************
+ * Pos 68칸 생성 로직
+ ***********************/
+function buildPosRowFromNumbers(seatNo, pos) {
+  var n = Number(seatNo) || 0;
+  var p = Number(pos) || 0;
+  if (!n || !p) {
+    var blank68 = [];
+    for (var b = 0; b < 68; b++) blank68.push(POS.Blank);
+    return blank68;
+  }
+  var key = n + '-' + p;
+  var row = [];
+  var i, sn, sp, seatKey, introKey;
+
+  // Intro (17칸)
+  for (i = 0; i < SEAT_ORDER.length; i++) {
+    sn = SEAT_ORDER[i][0];
+    sp = SEAT_ORDER[i][1];
+    seatKey = sn + '-' + sp;
+    introKey = INTRO[seatKey] || 'Blank';
+    row.push(seatKey === key ? (POS[introKey] || POS.Blank) : POS.Blank);
+  }
+  // Choice_O (17칸)
+  for (i = 0; i < SEAT_ORDER.length; i++) {
+    sn = SEAT_ORDER[i][0];
+    sp = SEAT_ORDER[i][1];
+    seatKey = sn + '-' + sp;
+    row.push(seatKey === key ? POS.Choice_O : POS.Blank);
+  }
+  // Default_X (End Choice) (17칸)
+  for (i = 0; i < SEAT_ORDER.length; i++) {
+    sn = SEAT_ORDER[i][0];
+    sp = SEAT_ORDER[i][1];
+    seatKey = sn + '-' + sp;
+    row.push(seatKey === key ? POS.Default_X : POS.Blank);
+  }
+  // Default_X (Back) (17칸)
+  for (i = 0; i < SEAT_ORDER.length; i++) {
+    sn = SEAT_ORDER[i][0];
+    sp = SEAT_ORDER[i][1];
+    seatKey = sn + '-' + sp;
+    row.push(seatKey === key ? POS.Default_X : POS.Blank);
+  }
+  return row; // 길이 68
+}
+
+function toCsvRow(arr) {
+  return arr.join(',') + '\r\n';
+}
+
+/***********************
+ * Serialize (GET)
+ *
+ * 신규 스키마 (timeline.csv):
+ *   0=CommandType, 1=Delete, 2=Level, 3=Board, 4=Hand,
+ *   5=Time1, 6=Time2, 7=Seat, 8=Text1, 9=Text2, 10=Text3,
+ *   11=Value1, 12=Value2, 13=Value3
+ ***********************/
+function doGet(e) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var rowsOut = [];
+    var seatIndexList = [];
+
+    for (var sheetIdx = 0; sheetIdx < TIMELINE_SHEETS.length; sheetIdx++) {
+      var name = TIMELINE_SHEETS[sheetIdx];
+      var sh = ss.getSheetByName(name);
+      if (!sh) {
+        return jsonOut({ ok: false, error: 'sheet not found: ' + name });
+      }
+
+      var dataRange = sh.getDataRange();
+      var vals = dataRange.getValues();
+      var disp = dataRange.getDisplayValues();
+
+      // MysteryHand 블록 처리를 위한 변수
+      var currentHand = null;
+      var currentCmdType = null;
+      var mhBlockFirstRow = null;
+
+      for (var r = 0; r < vals.length; r++) {
+        // 신규 스키마 컬럼 인덱스
+        var ct = (vals[r][0] || '').toString().trim();           // CommandType
+        var deleteVal = (vals[r][1] || '').toString().trim();    // Delete
+        var hand = (vals[r][4] || '').toString().trim();         // Hand
+        var time1 = disp[r][5];                                   // Time1 → ActionStart
+        var time2 = disp[r][6];                                   // Time2 → ActionEnd
+        var seat = vals[r][7];                                    // Seat
+        var text1 = vals[r][8] || '';                             // Text1
+        var text2 = vals[r][9] || '';                             // Text2
+        var text3 = vals[r][10] || '';                            // Text3
+        var value1 = vals[r][11] || '';                           // Value1
+        var value2 = vals[r][12] || '';                           // Value2
+        var value3 = vals[r][13] || '';                           // Value3
+
+        // 헤더 행 스킵
+        if (ct === 'CommandType') {
+          continue;
+        }
+
+        // 빈 행 스킵
+        if (!ct && (seat === '' || seat == null) && !time1) {
+          continue;
+        }
+
+        // Delete 플래그
+        var deleteFlag = (deleteVal === '1');
+
+        // 블록 변경 감지 (Hand 또는 CommandType 변경)
+        if (hand !== currentHand || ct !== currentCmdType) {
+          currentHand = hand;
+          currentCmdType = ct;
+          mhBlockFirstRow = null;
+        }
+
+        // MysteryHand 첫 행 저장 (Seat=-1인 행)
+        if ((ct === 'MysteryHand' || ct === 'MysteryHands') && Number(seat) === -1) {
+          mhBlockFirstRow = { text1: text1, text2: text2 };
+        }
+
+        // SeatIndex 변환 (기존 형식으로)
+        var seatIndex = seat;
+        var action = text1;
+
+        if (ct === 'MysteryHand' || ct === 'MysteryHands') {
+          var seatNum = Number(seat);
+
+          if (seatNum === -1) {
+            // Shuffle 행: OpenSeat 정보 출력
+            seatIndex = 'Open Seat ' + (text1 || '');
+            action = '';
+          } else if (seatNum === 99) {
+            // Showdown 행
+            seatIndex = mhBlockFirstRow ? (mhBlockFirstRow.text2 || '') : '';
+            action = 'Showdown/End';
+          } else if (seatNum >= 0 && seatNum <= 9) {
+            // Fold 행
+            seatIndex = seat;
+            action = 'Fold';
+          }
+        }
+
+        // GTO-W의 경우 숫자 SeatIndex만 수집 (Delete가 아닌 행만)
+        if (ct === 'GTO-W' && !deleteFlag && seat !== '' && seat != null && !isNaN(Number(seat))) {
+          seatIndexList.push(Number(seat));
+        }
+
+        // 기존 JSON 구조로 출력
+        var row = {
+          CommandType: (ct === 'MysteryHand') ? 'MysteryHands' : ct,
+          SeatIndex:   seatIndex,
+          ActionStart: time1,
+          ActionEnd:   time2,
+          Action:      action,
+          Text1:       text1,
+          Text2:       text2,
+          Text3:       text3,
+          Value1:      value1,
+          Value2:      value2,
+          Value3:      value3,
+          SheetName:   name,
+          Row:         r + 1,
+          Hand:        hand
+        };
+
+        // Delete 플래그 추가
+        if (deleteFlag) {
+          row.Delete = true;
+        }
+
+        rowsOut.push(row);
+      }
+    }
+
+    // Hero/Villain 슬롯 계산
+    var heroVillain = decideHeroVillainSeatNos(seatIndexList);
+    var slots = decideHeroVillainSlots(heroVillain.heroNo, heroVillain.villNo);
+    var heroSlot = 'Hero' + (slots.heroNo || 0) + '-' + (slots.heroPos || 0);
+    var villSlot = 'Villain' + (slots.villNo || 0) + '-' + (slots.villPos || 0);
+    var heroPosCsv = toCsvRow(buildPosRowFromNumbers(slots.heroNo, slots.heroPos));
+    var villPosCsv = toCsvRow(buildPosRowFromNumbers(slots.villNo, slots.villPos));
+
+    return jsonOut({
+      ok: true,
+      heroSlot: heroSlot,
+      villSlot: villSlot,
+      rows: rowsOut,
+      csvPos: {
+        hero: heroPosCsv,
+        villain: villPosCsv
+      }
+    });
+
+  } catch(err) {
+    return jsonOut({ ok: false, error: String(err) });
+  }
+}
+
+/***********************
+ * MysteryHands plan (POST)
+ ***********************/
+function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return jsonOut({ ok: false, error: 'no postData' });
+    }
+    var body = JSON.parse(e.postData.contents);
+    var seq = body.orange_sequence || [];
+    var vals = [];
+    for (var i = 0; i < 9; i++) {
+      vals.push(seq[i] || '');
+    }
+    var sh = SpreadsheetApp.openById(MH_PLAN_SHEET_ID)
+                           .getSheetByName(MH_SHEET_NAME);
+    if (!sh) {
+      return jsonOut({ ok: false, error: 'sheet not found: ' + MH_SHEET_NAME });
+    }
+    var rg = sh.getRange(MH_ORANGE_ROW, MH_ORANGE_COL, 1, 9);
+    rg.clearContent();
+    rg.setValues([vals]);
+    return jsonOut({ ok: true });
+  } catch(err) {
+    return jsonOut({ ok: false, error: String(err) });
+  }
+}

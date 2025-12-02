@@ -1,0 +1,15 @@
+{
+  "csv_dir": "C:/GGM$/CSV",
+  "gto_csv_url": "https://script.google.com/macros/s/AKfycbxLBFGiitVffRDjodxdQhUt49XxDBPr9XM1CkD9vNkdWQ_n8farmKbJt8hQsEVF8VZ5zA/exec",
+  "rows": 10,
+  "cols": 12,
+  "whitelist": [],
+  "serialize_url": "https://script.google.com/macros/s/AKfycbysVRcHyQKhyigfS0oG88sVTb6ZFfeD00iuC0hZ6MconyJIY-pMagpNXN1oVoxAHeMnaA/exec",
+  "mh_plan_url": "https://script.google.com/macros/s/AKfycbysVRcHyQKhyigfS0oG88sVTb6ZFfeD00iuC0hZ6MconyJIY-pMagpNXN1oVoxAHeMnaA/exec",
+  "daily_diff_seconds": 0,
+  "serialize_time_offset_seconds": 0,
+  "vmix_ip": "127.0.0.1",
+  "vmix_port": "8088",
+  "companion_ip": "10.10.100.134",
+  "companion_port": "8000"
+}
