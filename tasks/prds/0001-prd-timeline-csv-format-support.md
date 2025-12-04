@@ -250,6 +250,6 @@ python ggm_timeline_app.py
 
 **확인 사항**:
 1. GAS WebApp 배포 URL이 `ggm_config.json`에 올바르게 설정되었는지
-2. Google Sheet의 시트 이름이 `Sheet1`인지 (GAS의 `SH_MAIN` 상수)
+2. Google Sheet의 시트 이름이 `timeline`인지 (GAS의 `SH_MAIN` 상수)
 3. GAS 배포 시 "새 버전"으로 배포했는지
 4. Python 콘솔에서 오류 메시지 확인

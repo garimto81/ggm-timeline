@@ -2,8 +2,8 @@
  * GGM Serialize + Pos + MH Plan
  * ES5 호환 버전 (V8 런타임 비활성화 환경용)
  ***********************/
-var SHEET_ID   = '13CUG73ekp5xoCo3U8P-Sbn9ynJ9cvs6V06_dEQeG4VQ'; // 타임라인 시트 ID
-var SH_MAIN    = 'Sheet1';            // 타임라인 시트 이름
+var SHEET_ID   = '1HmT_wpo0TMHAE_BQKrKb0N0qE-S7J4TMdqKZi0OMXbQ'; // 샘플 타임라인 시트 ID
+var SH_MAIN    = 'timeline';          // 타임라인 시트 이름
 var TIMELINE_SHEETS = [SH_MAIN];
 // MH plan 대상 문서/시트
 var MH_PLAN_SHEET_ID = '1NydaQ9oBS1QG-wyyl7eO6AX5ou8ULRvxx0G3hfWdCFE';

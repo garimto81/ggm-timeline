@@ -50,13 +50,19 @@ ggm_timeline_app.py
 ## Commands
 
 ```powershell
-# 앱 실행
-python D:\AI\claude01\ggm_timeline\ggm_timeline_app.py
+# 앱 실행 (현재 디렉토리 기준)
+python ggm_timeline_app.py
 
-# GUI 단축키
-# F2: 실행 시작
-# F3: 실행 중지
+# 또는 절대 경로
+python C:\claude\ggm_timeline\ggm_timeline_app.py
 ```
+
+### GUI 단축키
+
+| Key | Action |
+|-----|--------|
+| F2 | 실행 시작 (Start) |
+| F3 | 실행 중지 (Stop) |
 
 ## Configuration (ggm_config.json)
 
@@ -76,17 +82,26 @@ python D:\AI\claude01\ggm_timeline\ggm_timeline_app.py
 
 ## Data Schema
 
-### Google Sheet 컬럼 (timeline.csv)
+### Google Sheet 컬럼 (timeline 시트)
 
 | Column | Index | Field | Description |
 |--------|-------|-------|-------------|
-| A | 0 | CommandType | GTO-W, MysteryHand, BlindsUp, BreakSkip |
+| A | 0 | CommandType | GTO-W, MysteryHands, BlindsUp, BreakSkip |
 | B | 1 | Delete | `1`이면 삭제 (executed_keys에서 제거) |
-| E | 4 | Hand | 블록 구분 키 |
+| C | 2 | Level | (미사용) |
+| D | 3 | Board | (미사용) |
+| E | 4 | Hand | 블록 구분 키 (Hand + CommandType 조합) |
 | F | 5 | Time1 | ActionStart (timestamp) |
 | G | 6 | Time2 | ActionEnd (timestamp) |
 | H | 7 | Seat | SeatIndex (MH: -1=Shuffle, 99=Showdown) |
-| I-N | 8-13 | Text1~3, Value1~3 | 추가 데이터 |
+| I | 8 | Text1 | 추가 데이터 |
+| J | 9 | Text2 | 추가 데이터 |
+| K | 10 | Text3 | 추가 데이터 |
+| L | 11 | Value1 | 추가 데이터 |
+| M | 12 | Value2 | 추가 데이터 |
+| N | 13 | Value3 | 추가 데이터 |
+
+> **참고**: GAS에서 신규 스키마를 읽어 기존 JSON 구조로 변환하여 Python에 전달
 
 ### BCode 매핑
 
@@ -142,6 +157,6 @@ SeatIndex(0-9, Vlada=0 기준) → Table Seat(1-10):
 | 증상 | 원인 | 해결 |
 |------|------|------|
 | GAS `SyntaxError: const` | V8 런타임 비활성화 | 프로젝트 설정 > "Chrome V8" 체크 또는 ES5 코드 사용 |
-| GUI 데이터 미표시 | serialize_url 미설정 | 배포 URL 확인, Sheet 이름 `Sheet1` 확인 |
+| GUI 데이터 미표시 | serialize_url 미설정 | 배포 URL 확인, Sheet 이름 `timeline` 확인 |
 | Delete 미동작 | 플래그 미반환 | GAS `Delete: true` 반환 확인, `build_timeline_from_rows()` 반환값 확인 |
 | 이벤트 발화 안됨 | vMix 연결 실패 | vMix IP/Port 확인, Fallback으로 로컬 시계 사용됨 |
